@@ -64,7 +64,8 @@ O problema que o sistema ataca: ONGs de pequeno e médio porte costumam controla
 | Adoção | Candidatura, triagem, aprovação, termo em PDF, acompanhamento | 🟡 |
 | Doações e despesas | Lançamentos, categorias, rateio por animal, relatórios | ⬜ |
 | Voluntários e apadrinhamento | Cadastro, escala de tarefas, vínculo padrinho–animal | ⬜ |
-| Relatórios | Dashboard operacional e prestação de contas | ⬜ |
+| Privacidade e engajamento | Consentimento de cookies, política de privacidade, anonimização, favoritos, finais felizes, compartilhamento | ✅ |
+| Relatórios | Dashboard operacional e prestação de contas | 🟡 visão geral do painel |
 | Infraestrutura | Docker Compose, deploy em LXC no Proxmox, backups | ✅ |
 
 ### Fora do escopo (não será implementado)
@@ -145,7 +146,7 @@ O problema que o sistema ataca: ONGs de pequeno e médio porte costumam controla
 | RF29 | Permitir vincular uma despesa a um animal específico ou classificá-la como despesa geral | Alta | ⬜ |
 | RF30 | Calcular o custo acumulado por animal e o custo médio mensal por animal | Média | ⬜ |
 | RF31 | Gerar relatório mensal de transparência (entradas, saídas, saldo) exportável em PDF | Alta | ⬜ |
-| RF32 | Exibir dashboard com total de animais por status, adoções no mês, saldo financeiro e pendências veterinárias | Alta | ⬜ |
+| RF32 | Exibir dashboard com total de animais por status, adoções no mês, saldo financeiro e pendências veterinárias | Alta | 🟡 sem financeiro e prontuário (ver RF48) |
 
 ### 5.6 Voluntários e apadrinhamento
 
@@ -158,6 +159,20 @@ O problema que o sistema ataca: ONGs de pequeno e médio porte costumam controla
 | RF37 | Registrar apadrinhamento: padrinho, animal, valor mensal e data de início | Média | ⬜ |
 | RF38 | Listar apadrinhamentos com contribuição em atraso | Baixa | ⬜ |
 | RF39 | Encerrar apadrinhamento automaticamente quando o animal for adotado, notificando o padrinho | Baixa | ⬜ |
+
+### 5.7 Privacidade e engajamento
+
+| ID | Requisito | Prioridade | Status |
+|---|---|---|---|
+| RF40 | Exibir aviso de cookies na primeira visita, com as opções aceitar todos, só necessários e personalizar por categoria (necessários, preferências, estatísticas), e permitir mudar a escolha pelo rodapé | Alta | ✅ |
+| RF41 | Exibir a Política de Privacidade com dados coletados, finalidade, cookies, retenção e direitos do titular | Alta | ✅ |
+| RF42 | Exigir o aceite da Política de Privacidade nos formulários públicos e registrar data e hora do consentimento | Alta | ✅ |
+| RF43 | Permitir ao admin anonimizar os dados pessoais de uma candidatura ou mensagem, preservando o histórico | Alta | ✅ |
+| RF44 | Permitir ao visitante marcar animais como favoritos (cookie de preferências) e vê-los em uma página própria | Baixa | ✅ |
+| RF45 | Contar visualizações da página de cada animal de forma anônima, só com consentimento de estatística | Baixa | ✅ |
+| RF46 | Exibir a página "Finais felizes" com os animais adotados | Baixa | ✅ |
+| RF47 | Compartilhar o animal pelo WhatsApp ou copiar o link da página | Média | ✅ |
+| RF48 | Exibir no painel a visão geral: animais por status, candidaturas pendentes, mensagens não lidas, adoções aprovadas em 30 dias e animais mais vistos | Média | ✅ |
 
 ---
 
@@ -173,9 +188,9 @@ O problema que o sistema ataca: ONGs de pequeno e médio porte costumam controla
 | RNF06 | O sistema deve ser executável via Docker Compose com um único comando e implantável em container LXC no Proxmox | ✅ |
 | RNF07 | Formulários públicos e login devem ter limite de requisições por IP | ✅ |
 | RNF08 | O sistema deve responder a 95% das requisições de listagem em menos de 2 segundos com base de 1.000 animais | ⬜ a medir |
-| RNF09 | A cobertura de testes automatizados da camada de serviço deve ser de no mínimo 60% | ⬜ |
+| RNF09 | A cobertura de testes automatizados da camada de serviço deve ser de no mínimo 60% | 🟡 suíte de ponta a ponta em `api/test` (37 casos) |
 | RNF10 | As imagens enviadas devem ser redimensionadas para no máximo 1280px e 500KB | ⬜ hoje: limite de 5 MB, sem redimensionar |
-| RNF11 | Conformidade com a LGPD: consentimento explícito no formulário público e possibilidade de anonimizar dados do adotante | ⬜ |
+| RNF11 | Conformidade com a LGPD: consentimento explícito no formulário público e possibilidade de anonimizar dados do adotante | ✅ RF40–RF43 |
 | RNF12 | Interface responsiva e com critérios básicos de acessibilidade (contraste, labels em formulários, navegação por teclado) | 🟡 |
 | RNF13 | Backup diário do banco e das fotos, com retenção de 14 dias | ✅ `scripts/backup.sh` |
 
@@ -376,12 +391,15 @@ resgate-animal/
 | `/adote` | Público | Vitrine com filtros | ✅ |
 | `/adote/:id` | Público | Detalhe do animal + candidatura | ✅ |
 | `/ajude` | Público | Como ajudar + contato | ✅ |
+| `/finais-felizes` | Público | Animais adotados | ✅ |
+| `/favoritos` | Público | Favoritos do visitante (cookie de preferências) | ✅ |
+| `/privacidade` | Público | Política de Privacidade e cookies | ✅ |
 | `/login` | Público | Autenticação | ✅ |
-| `/admin` | admin | Listagem e cadastro de animais | ✅ |
+| `/admin` | admin | Visão geral | ✅ |
+| `/admin/animais` | admin | Listagem e cadastro de animais | ✅ |
 | `/admin/animais/:id` | admin | Edição e fotos do animal | ✅ |
-| `/admin/adocoes` | admin | Fila de candidaturas | ✅ |
-| `/admin/mensagens` | admin | Mensagens recebidas | ✅ |
-| `/admin/painel` | autenticado | Dashboard | ⬜ |
+| `/admin/adocoes` | admin | Fila de candidaturas, consentimento e anonimização | ✅ |
+| `/admin/mensagens` | admin | Mensagens recebidas, consentimento e anonimização | ✅ |
 | `/admin/animais/:id/prontuario` | admin, veterinario | Prontuário e eventos clínicos | ⬜ |
 | `/admin/pendencias` | admin, veterinario | Alertas veterinários | ⬜ |
 | `/admin/financeiro` | admin | Doações, despesas e relatório | ⬜ |
@@ -399,10 +417,14 @@ resgate-animal/
 | GET | `/animals/:id` | Público | Detalhe com fotos | ✅ |
 | POST / PUT / DELETE | `/animals[/:id]` | admin | Cadastro, edição, exclusão | ✅ |
 | POST / DELETE | `/animals/:id/photos[/:photoId]` | admin | Envio e remoção de fotos | ✅ |
-| POST | `/adoptions` | Público | Candidatura de adoção | ✅ |
+| POST | `/animals/:id/view` | Público | Soma uma visualização (o site só chama com consentimento de estatística) | ✅ |
+| POST | `/adoptions` | Público | Candidatura de adoção (exige `lgpd_consent: true`) | ✅ |
 | GET / PATCH | `/adoptions[/:id]` | admin | Fila e mudança de status | ✅ |
-| POST | `/contacts` | Público | Mensagem de contato | ✅ |
+| POST | `/adoptions/:id/anonymize` | admin | Apaga os dados pessoais da candidatura | ✅ |
+| POST | `/contacts` | Público | Mensagem de contato (exige `lgpd_consent: true`) | ✅ |
 | GET / PATCH | `/contacts[/:id]` | admin | Caixa de mensagens | ✅ |
+| POST | `/contacts/:id/anonymize` | admin | Apaga os dados pessoais e o conteúdo da mensagem | ✅ |
+| GET | `/stats` | admin | Números da visão geral do painel | ✅ |
 | GET / POST | `/animals/:id/medical-record` | admin, veterinario | Prontuário e eventos | ⬜ |
 | GET | `/pending-care` | admin, veterinario | Pendências veterinárias | ⬜ |
 | GET | `/adoptions/:id/term.pdf` | admin | Termo de adoção | ⬜ |
@@ -476,7 +498,7 @@ Internet ──► Proxy reverso HTTPS ──► LXC :80 [web] Nginx
    docker compose up -d --build
    docker compose logs -f api             # aguarde "API ouvindo na porta 3000"
    ```
-4. **Atualizar:** `git pull && docker compose up -d --build`
+4. **Atualizar:** `git pull && docker compose up -d --build`. Migrations novas (como a `002_lgpd_views`) são aplicadas sozinhas quando a API reinicia; confira com `docker compose logs api | grep Migra`.
 5. **HTTPS:** Nginx Proxy Manager ou Caddy em outro LXC apontando para `http://<ip-do-lxc>:80`, ou Cloudflare Tunnel.
 6. **Backups:** agende `scripts/backup.sh` no cron do LXC (`0 3 * * *`) e complemente com o backup do CT pelo Proxmox (*Datacenter → Backup*, modo snapshot). Para restaurar o banco:
    ```bash
@@ -499,8 +521,15 @@ O objetivo é que o dashboard e os relatórios já apareçam preenchidos em demo
 |---|---|---|---|
 | Unitário | Máquina de estados, cálculo de reforço vacinal e de custo por animal | `node:test` | ⬜ |
 | Integração | Rotas da API contra um PostgreSQL de teste | `node:test` + supertest | ⬜ |
-| Ponta a ponta | Fluxos principais da API (login, animais, fotos, adoção, contato) | Script de verificação | 🟡 executado manualmente (31 casos) |
+| Ponta a ponta | Login, permissões, validação, animais, fotos, visualizações, adoção, contato, LGPD (consentimento e anonimização), visão geral | `node:test` em `api/test/` | ✅ 37 casos |
 | Manual | Roteiro de casos de teste por requisito funcional | Planilha de evidências | ⬜ |
+
+**Rodando a suíte de ponta a ponta.** Os testes criam e apagam registros: use sempre um banco descartável, **nunca o de produção**. Suba a API apontando para esse banco (ex.: um Postgres local de testes) e, em outro terminal:
+
+```bash
+cd api
+API_URL=http://localhost:3000 ADMIN_EMAIL=<admin do .env> ADMIN_PASSWORD=<senha do .env> npm test
+```
 
 Casos obrigatórios: tentativa de transição inválida de estado, adoção de animal não castrado, aprovação de candidatura cancelando as demais, acesso de `voluntario` a rota financeira (deve retornar 403).
 

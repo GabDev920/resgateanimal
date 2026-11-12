@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import FavoriteButton from './FavoriteButton.jsx';
 import { LABELS, formatAge, photoUrl } from '../api.js';
 
 export default function AnimalCard({ animal }) {
@@ -10,6 +11,7 @@ export default function AnimalCard({ animal }) {
         ) : (
           <span className="no-photo">{animal.species === 'gato' ? '🐱' : '🐶'}</span>
         )}
+        <FavoriteButton animal={animal} compact />
       </div>
       <div className="card-body">
         <h3>{animal.name}</h3>

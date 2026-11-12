@@ -1,12 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useFetch } from '../components/useFetch.js';
+import FavoriteButton from '../components/FavoriteButton.jsx';
+import LgpdConsent, { withConsent } from '../components/LgpdConsent.jsx';
 import { api, LABELS, formatAge, photoUrl } from '../api.js';
+import { useConsent } from '../consent.js';
+
+// Animais já contados nesta visita (evita somar de novo ao voltar para a mesma página).
+const counted = new Set();
 
 export default function AnimalDetail() {
   const { id } = useParams();
   const { data: animal, loading, error } = useFetch(`/animals/${id}`);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const consent = useConsent();
+
+  useEffect(() => {
+    if (!consent?.statistics || counted.has(id)) return;
+    counted.add(id);
+    api(`/animals/${id}/view`, { method: 'POST' }).catch(() => {});
+  }, [id, consent?.statistics]);
 
   if (loading) return <p>Carregando...</p>;
   if (error) return <p className="error">{error}</p>;
@@ -17,7 +30,7 @@ export default function AnimalDetail() {
   return (
     <>
       <p>
-        <Link to="/adote">← Voltar</Link>
+        <Link to={animal.status === 'adotado' ? '/finais-felizes' : '/adote'}>← Voltar</Link>
       </p>
       <div className="detail">
         <div>
@@ -36,8 +49,16 @@ export default function AnimalDetail() {
         </div>
 
         <div>
-          <h1>{animal.name}</h1>
+          <div className="title-row">
+            <h1>{animal.name}</h1>
+            <FavoriteButton animal={animal} />
+          </div>
           <span className="badge">{LABELS.status[animal.status]}</span>
+          {animal.views > 0 && (
+            <span className="views">
+              👀 {animal.views} {animal.views === 1 ? 'visualização' : 'visualizações'}
+            </span>
+          )}
           <ul className="facts">
             <li>
               <strong>Espécie:</strong> {LABELS.species[animal.species]}
@@ -62,6 +83,7 @@ export default function AnimalDetail() {
               <strong>Saúde:</strong> {animal.health_notes}
             </p>
           )}
+          <ShareButtons animal={animal} />
         </div>
       </div>
 
@@ -70,12 +92,48 @@ export default function AnimalDetail() {
   );
 }
 
+function ShareButtons({ animal }) {
+  const [copied, setCopied] = useState(false);
+  const url = window.location.href;
+  const text =
+    animal.status === 'adotado'
+      ? `${animal.name} encontrou um lar! 🎉 ${url}`
+      : `Conheça ${animal.name}, que está esperando por uma família! 🐾 ${url}`;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt('Copie o link:', url);
+    }
+  }
+
+  return (
+    <div className="share">
+      <span className="muted">Ajude a divulgar:</span>
+      <a
+        className="btn btn-sm btn-whatsapp"
+        href={`https://wa.me/?text=${encodeURIComponent(text)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Compartilhar no WhatsApp
+      </a>
+      <button type="button" className="btn btn-outline btn-sm" onClick={copy}>
+        {copied ? 'Link copiado ✓' : 'Copiar link'}
+      </button>
+    </div>
+  );
+}
+
 function AdoptionForm({ animal }) {
   const [status, setStatus] = useState({ sending: false, done: false, error: null });
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const form = Object.fromEntries(new FormData(e.currentTarget));
+    const form = withConsent(Object.fromEntries(new FormData(e.currentTarget)));
     setStatus({ sending: true, done: false, error: null });
     try {
       await api('/adoptions', { method: 'POST', body: { ...form, animal_id: animal.id } });
@@ -120,6 +178,7 @@ function AdoptionForm({ animal }) {
         Conte um pouco sobre você e sua casa
         <textarea name="message" rows={4} />
       </label>
+      <LgpdConsent />
       {status.error && <p className="error">{status.error}</p>}
       <button className="btn" disabled={status.sending}>
         {status.sending ? 'Enviando...' : 'Enviar interesse'}

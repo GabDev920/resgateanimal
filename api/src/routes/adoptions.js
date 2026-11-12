@@ -4,6 +4,7 @@ import { db } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { publicFormLimit } from '../middleware/rateLimit.js';
 import { ADOPTION_STATUS } from '../constants.js';
+import { lgpdConsent, ANONYMIZED } from '../lgpd.js';
 
 export const adoptionsRouter = Router();
 
@@ -14,17 +15,18 @@ const requestSchema = z.object({
   phone: z.string().trim().min(8).max(30),
   city: z.string().trim().min(2).max(100),
   message: z.string().trim().max(3000).default(''),
+  lgpd_consent: lgpdConsent,
 });
 
 const idParam = z.coerce.number().int().positive();
 
 adoptionsRouter.post('/', publicFormLimit, async (req, res) => {
-  const data = requestSchema.parse(req.body);
+  const { lgpd_consent, ...data } = requestSchema.parse(req.body);
   const animal = await db('animals').where({ id: data.animal_id }).first();
   if (!animal || !['disponivel', 'em_processo'].includes(animal.status)) {
     return res.status(400).json({ error: 'Este animal não está disponível para adoção' });
   }
-  await db('adoption_requests').insert(data);
+  await db('adoption_requests').insert({ ...data, lgpd_consent_at: db.fn.now() });
   res.status(201).json({ ok: true });
 });
 
@@ -44,6 +46,21 @@ adoptionsRouter.patch('/:id', requireAuth, async (req, res) => {
   const updated = await db('adoption_requests')
     .where({ id })
     .update({ status, updated_at: db.fn.now() });
+  if (!updated) return res.status(404).json({ error: 'Solicitação não encontrada' });
+  res.status(204).end();
+});
+
+// Direito do titular (LGPD, art. 18): apaga os dados pessoais e mantém o registro para o histórico.
+adoptionsRouter.post('/:id/anonymize', requireAuth, async (req, res) => {
+  const id = idParam.parse(req.params.id);
+  const updated = await db('adoption_requests').where({ id }).update({
+    ...ANONYMIZED,
+    phone: '-',
+    city: '-',
+    message: '',
+    anonymized_at: db.fn.now(),
+    updated_at: db.fn.now(),
+  });
   if (!updated) return res.status(404).json({ error: 'Solicitação não encontrada' });
   res.status(204).end();
 });

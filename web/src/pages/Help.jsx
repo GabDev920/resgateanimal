@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api, LABELS } from '../api.js';
+import LgpdConsent, { withConsent } from '../components/LgpdConsent.jsx';
 
 export default function Help() {
   const [status, setStatus] = useState({ sending: false, done: false, error: null });
@@ -7,7 +8,7 @@ export default function Help() {
   async function handleSubmit(e) {
     e.preventDefault();
     const formEl = e.currentTarget;
-    const form = Object.fromEntries(new FormData(formEl));
+    const form = withConsent(Object.fromEntries(new FormData(formEl)));
     if (!form.phone) delete form.phone;
     setStatus({ sending: true, done: false, error: null });
     try {
@@ -73,6 +74,7 @@ export default function Help() {
           Mensagem
           <textarea name="message" rows={5} required minLength={5} />
         </label>
+        <LgpdConsent />
         {status.error && <p className="error">{status.error}</p>}
         {status.done && <p className="success">Mensagem enviada! Obrigado pelo contato. 💛</p>}
         <button className="btn" disabled={status.sending}>

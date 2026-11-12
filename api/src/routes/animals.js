@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { upload, removeUpload } from '../middleware/upload.js';
+import { viewLimit } from '../middleware/rateLimit.js';
 import { SPECIES, SEX, SIZES, ANIMAL_STATUS } from '../constants.js';
 
 export const animalsRouter = Router();
@@ -62,6 +63,13 @@ animalsRouter.get('/:id', async (req, res) => {
   const animal = await findAnimal(idParam.parse(req.params.id));
   if (!animal) return res.status(404).json({ error: 'Animal não encontrado' });
   res.json(animal);
+});
+
+// Contador anônimo: o site só chama esta rota quando o visitante aceitou cookies de estatística.
+animalsRouter.post('/:id/view', viewLimit, async (req, res) => {
+  const updated = await db('animals').where({ id: idParam.parse(req.params.id) }).increment('views', 1);
+  if (!updated) return res.status(404).json({ error: 'Animal não encontrado' });
+  res.status(204).end();
 });
 
 animalsRouter.post('/', requireAuth, async (req, res) => {

@@ -106,7 +106,7 @@ export default function AnimalEditor() {
   return (
     <>
       <p>
-        <Link to="/admin">← Voltar</Link>
+        <Link to="/admin/animais">← Voltar</Link>
       </p>
       <form className="card card-body form" onSubmit={handleSubmit}>
         <h1>{id ? `Editar ${animal.name}` : 'Cadastrar animal'}</h1>

@@ -1,19 +1,28 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFetch } from '../../components/useFetch.js';
+import ConsentInfo from '../../components/ConsentInfo.jsx';
 import { api, LABELS, formatDate } from '../../api.js';
 
 export default function AdoptionsAdmin() {
   const [filter, setFilter] = useState('pendente');
   const { data: requests, loading, error, reload } = useFetch(`/adoptions${filter ? `?status=${filter}` : ''}`);
 
-  async function setStatus(request, status) {
+  async function run(action) {
     try {
-      await api(`/adoptions/${request.id}`, { method: 'PATCH', body: { status } });
+      await action();
       reload();
     } catch (err) {
       alert(err.message);
     }
+  }
+
+  const setStatus = (request, status) =>
+    run(() => api(`/adoptions/${request.id}`, { method: 'PATCH', body: { status } }));
+
+  function anonymize(request) {
+    if (!confirm(`Apagar os dados pessoais de ${request.name}? O registro da candidatura continua, sem identificação. Esta ação não pode ser desfeita.`)) return;
+    run(() => api(`/adoptions/${request.id}/anonymize`, { method: 'POST' }));
   }
 
   return (
@@ -42,10 +51,13 @@ export default function AdoptionsAdmin() {
               </h3>
               <span className="badge">{LABELS.adoption[r.status]}</span>
             </div>
-            <p className="muted">
-              {formatDate(r.created_at)} · {r.email} · {r.phone} · {r.city}
-            </p>
+            {!r.anonymized_at && (
+              <p className="muted">
+                {formatDate(r.created_at)} · {r.email} · {r.phone} · {r.city}
+              </p>
+            )}
             {r.message && <p className="pre">{r.message}</p>}
+            <ConsentInfo item={r} />
             <div className="actions">
               {r.status !== 'aprovado' && (
                 <button className="btn btn-sm" onClick={() => setStatus(r, 'aprovado')}>
@@ -60,6 +72,11 @@ export default function AdoptionsAdmin() {
               {r.status !== 'pendente' && (
                 <button className="link" onClick={() => setStatus(r, 'pendente')}>
                   Voltar para pendente
+                </button>
+              )}
+              {!r.anonymized_at && (
+                <button className="link danger" onClick={() => anonymize(r)}>
+                  Anonimizar dados
                 </button>
               )}
             </div>

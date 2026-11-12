@@ -1,5 +1,6 @@
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom';
 import { auth } from '../../api.js';
+import Dashboard from './Dashboard.jsx';
 import AnimalsAdmin from './AnimalsAdmin.jsx';
 import AnimalEditor from './AnimalEditor.jsx';
 import AdoptionsAdmin from './AdoptionsAdmin.jsx';
@@ -18,8 +19,9 @@ export default function Admin() {
       <div className="admin-bar">
         <nav className="tabs">
           <NavLink to="/admin" end>
-            Animais
+            Visão geral
           </NavLink>
+          <NavLink to="/admin/animais">Animais</NavLink>
           <NavLink to="/admin/adocoes">Adoções</NavLink>
           <NavLink to="/admin/mensagens">Mensagens</NavLink>
         </nav>
@@ -28,7 +30,8 @@ export default function Admin() {
         </button>
       </div>
       <Routes>
-        <Route index element={<AnimalsAdmin />} />
+        <Route index element={<Dashboard />} />
+        <Route path="animais" element={<AnimalsAdmin />} />
         <Route path="animais/novo" element={<AnimalEditor />} />
         <Route path="animais/:id" element={<AnimalEditor />} />
         <Route path="adocoes" element={<AdoptionsAdmin />} />

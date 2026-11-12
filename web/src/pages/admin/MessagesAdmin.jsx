@@ -1,16 +1,25 @@
 import { useFetch } from '../../components/useFetch.js';
+import ConsentInfo from '../../components/ConsentInfo.jsx';
 import { api, LABELS, formatDate } from '../../api.js';
 
 export default function MessagesAdmin() {
   const { data: messages, loading, error, reload } = useFetch('/contacts');
 
-  async function toggleRead(message) {
+  async function run(action) {
     try {
-      await api(`/contacts/${message.id}`, { method: 'PATCH', body: { read: !message.read } });
+      await action();
       reload();
     } catch (err) {
       alert(err.message);
     }
+  }
+
+  const toggleRead = (message) =>
+    run(() => api(`/contacts/${message.id}`, { method: 'PATCH', body: { read: !message.read } }));
+
+  function anonymize(message) {
+    if (!confirm(`Apagar os dados pessoais e o conteúdo da mensagem de ${message.name}? Esta ação não pode ser desfeita.`)) return;
+    run(() => api(`/contacts/${message.id}/anonymize`, { method: 'POST' }));
   }
 
   return (
@@ -27,13 +36,22 @@ export default function MessagesAdmin() {
               <span className="badge">{LABELS.contact[m.type]}</span>
             </div>
             <p className="muted">
-              {formatDate(m.created_at)} · {m.email}
+              {formatDate(m.created_at)}
+              {!m.anonymized_at && ` · ${m.email}`}
               {m.phone && ` · ${m.phone}`}
             </p>
             <p className="pre">{m.message}</p>
-            <button className="link" onClick={() => toggleRead(m)}>
-              {m.read ? 'Marcar como não lida' : 'Marcar como lida'}
-            </button>
+            <ConsentInfo item={m} />
+            <div className="actions">
+              <button className="link" onClick={() => toggleRead(m)}>
+                {m.read ? 'Marcar como não lida' : 'Marcar como lida'}
+              </button>
+              {!m.anonymized_at && (
+                <button className="link danger" onClick={() => anonymize(m)}>
+                  Anonimizar dados
+                </button>
+              )}
+            </div>
           </article>
         ))}
       </div>

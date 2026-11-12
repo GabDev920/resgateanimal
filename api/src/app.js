@@ -9,6 +9,7 @@ import { authRouter } from './routes/auth.js';
 import { animalsRouter } from './routes/animals.js';
 import { adoptionsRouter } from './routes/adoptions.js';
 import { contactsRouter } from './routes/contacts.js';
+import { statsRouter } from './routes/stats.js';
 
 export const app = express();
 
@@ -29,6 +30,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/animals', animalsRouter);
 app.use('/api/adoptions', adoptionsRouter);
 app.use('/api/contacts', contactsRouter);
+app.use('/api/stats', statsRouter);
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'Rota não encontrada' }));
 
